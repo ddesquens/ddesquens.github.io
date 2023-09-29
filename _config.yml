@@ -1,0 +1,21 @@
+title: <p align="center"> David Desquens </p>
+  
+logo: "/images/profile.png?raw=true"
+
+description:
+  <p align="center">
+  <a href="https://www.linkedin.com/in/desquens/">LinkedIn</a> |
+  <a href="https://github.com/ddesquens">GitHub</a>
+  </p>
+
+  <p align="justify">
+  I am a Senior Data Analyst with an education background of double degree in Industrial & Management Engineering at Universitat Politècnica de Catalunya (ETSEIB) & Politecnico di Milano respectively.
+  <br><br>
+  Welcome to my data science portfolio where I show some of my personal projects involving the usage of R, Python and Machinge Learning among others.
+  <br><br>
+  </p>
+  
+remote_theme: pages-themes/minimal@v0.2.0
+plugins:
+- jekyll-remote-theme
+google_analytics: UA-000000-0 # your Google Analytics tracking ID here

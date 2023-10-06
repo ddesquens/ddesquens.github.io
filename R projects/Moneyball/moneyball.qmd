@@ -123,7 +123,7 @@ lost.players <- combo %>% subset(playerID %in% c('giambja01','damonjo01','saenzo
 
 #visualize trend of salaries through years
 trendsal.lostplayers <- ggplot(filter(lost.players,yearID<2003),aes(yearID,round(salary/1e6,2))) + geom_line(aes(group=playerID,color=playerID)) + geom_point(aes(color=playerID)) + theme(plot.margin=0) + theme_calc() + labs(y='salary ($M)',x='season',caption='salary trend for the lost players up until 2002, after they moved to other teams in 2001')
-print(trendsal.lostplayers)
+trendsal.lostplayers
 ```
 
 Other than the budget constrain, what are other variables that we should be focusing on among the entire dataset? Let's explore the relationships and correlations between variables:

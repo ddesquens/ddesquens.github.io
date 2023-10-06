@@ -21,6 +21,40 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -35,6 +69,9 @@ ul.task-list li input[type="checkbox"] {
 <link href="moneyball_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="moneyball_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 
+<link href="moneyball_files/libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet">
+<script src="moneyball_files/libs/pagedtable-1.1/js/pagedtable.js"></script>
+
 
 </head>
 
@@ -46,7 +83,7 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">MoneyBall</h1>
+<div class="quarto-title-block"><div><h1 class="title">MoneyBall</h1><button type="button" class="btn code-tools-button dropdown-toggle" id="quarto-code-tools-menu" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi"></i> Code</button><ul class="dropdown-menu dropdown-menu-end" aria-labelelledby="quarto-code-tools-menu"><li><a id="quarto-show-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Show All Code</a></li><li><a id="quarto-hide-all-code" class="dropdown-item" href="javascript:void(0)" role="button">Hide All Code</a></li><li><hr class="dropdown-divider"></li><li><a id="quarto-view-source" class="dropdown-item" href="javascript:void(0)" role="button">View Source</a></li></ul></div></div>
 <p class="subtitle lead">Helping Billy Beane (or Brad Pitt) to make it to the 2002 playoffs with the Oakland A’s</p>
 </div>
 
@@ -76,6 +113,10 @@ ul.task-list li input[type="checkbox"] {
 <section id="context-background" class="level2">
 <h2 class="anchored" data-anchor-id="context-background">Context &amp; Background</h2>
 <p><em>Source: <a href="https://en.wikipedia.org/wiki/Moneyball">Wikipedia</a></em></p>
+<section id="rules-of-baseball" class="level4">
+<h4 class="anchored" data-anchor-id="rules-of-baseball"><strong>Rules of Baseball</strong></h4>
+<p>You don’t need to know much about Baseball to understand the analysis. If you’re totally unfamiliar with Baseball, check out this <a href="https://www.youtube.com/watch?v=0bKkGeROiPA">useful explanatory video!</a></p>
+</section>
 <section id="the-2002-oakland-as" class="level4">
 <h4 class="anchored" data-anchor-id="the-2002-oakland-as"><strong>The 2002 Oakland A’s</strong></h4>
 <p>The Oakland Athletics’ 2002 season was the team’s 35th in Oakland, California. It was also the 102nd season in franchise history. The Athletics finished first in the American League West with a record of 103-59.</p>
@@ -104,9 +145,69 @@ ul.task-list li input[type="checkbox"] {
 <p><img src="Moneyball.jpg" class="img-fluid figure-img"></p>
 </figure>
 </div>
-<section id="data" class="level4">
-<h4 class="anchored" data-anchor-id="data"><strong>Data</strong></h4>
-<p>We’ll be using data from <a href="http://www.seanlahman.com">Sean Lahaman’s Website</a> a very useful source for baseball statistics. The documentation for the csv files that we will be using is located in the <strong>readme2013.txt</strong> file. You may need to reference this to understand what acronyms stand for.</p>
+<section id="data-prep" class="level4">
+<h4 class="anchored" data-anchor-id="data-prep"><strong>Data prep</strong></h4>
+<p>We’ll be using data from <a href="http://www.seanlahman.com">Sean Lahaman’s Website</a> a very useful source for baseball statistics. The documentation for the csv files that we will be using is located in the readme2013.txt file in the <a href="https://github.com/ddesquens/ddesquens.github.io/tree/main/R%20projects/Moneyball">github repo</a>. You may need to reference this to understand what acronyms stand for.</p>
+<p>We know from literature that on-base percentage (<code>OBP</code>) and slugging percentage (<code>SLG</code>) are better indicators of offensive success, so we’re calculating and adding them to our data, which is made of two data extracts that contain stats and salaries; we are merging them by <code>playerID</code> and <code>yearID</code>, illustrating a sample of the results as follows:</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># data prep</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co">#add features to data</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>batting<span class="sc">$</span>BA <span class="ot">&lt;-</span> batting<span class="sc">$</span>H <span class="sc">/</span> batting<span class="sc">$</span>AB</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>batting <span class="ot">&lt;-</span> batting <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">OBP =</span> (H<span class="sc">+</span>BB<span class="sc">+</span>HBP)<span class="sc">/</span>(AB<span class="sc">+</span>BB<span class="sc">+</span>HBP<span class="sc">+</span>SF))</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>batting <span class="ot">&lt;-</span> batting <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">X1B =</span> H<span class="sc">-</span>X2B<span class="sc">-</span>X3B<span class="sc">-</span>HR)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>batting <span class="ot">&lt;-</span> batting <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">SLG =</span> (X1B <span class="sc">+</span> <span class="dv">2</span><span class="sc">*</span>X2B <span class="sc">+</span> <span class="dv">3</span><span class="sc">*</span>X3B <span class="sc">+</span> <span class="dv">4</span><span class="sc">*</span>HR)<span class="sc">/</span>AB)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co">#remove data from batting (salaries data set only have data from 1985 onwards)</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>batting <span class="ot">&lt;-</span> batting <span class="sc">%&gt;%</span> <span class="fu">filter</span>(yearID<span class="sc">&gt;=</span><span class="dv">1985</span>)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="co">#*to check that we have don't it correctly: arrange(distinct((batting %&gt;% filter(yearID&gt;=1985))['yearID']),yearID)</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="co">#merge both datasets batting and sal to combine player stats with salaries</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>combo <span class="ot">&lt;-</span> <span class="fu">merge</span>(batting,sal,<span class="at">by=</span><span class="fu">c</span>(<span class="st">'playerID'</span>,<span class="st">'yearID'</span>))</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co">#show results</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">head</span>(<span class="fu">arrange</span>(<span class="fu">select</span>(<span class="fu">filter</span>(combo,yearID<span class="sc">==</span><span class="dv">2001</span>),playerID,teamID.x,AB,OBP,SLG,salary),<span class="fu">desc</span>(OBP<span class="sc">*</span>AB))))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>   playerID teamID.x  AB       OBP       SLG   salary
+1 suzukic01      SEA 692 0.3814714 0.4566474  5666667
+2 gonzalu01      ARI 609 0.4285714 0.6880131  4833333
+3 heltoto01      COL 587 0.4316547 0.6848382  4950000
+4  sosasa01      CHN 577 0.4374121 0.7365685 12500000
+5 rodrial01      TEX 632 0.3989071 0.6218354 22000000
+6 berkmla01      HOU 577 0.4302326 0.6204506   305000</code></pre>
+</div>
+</div>
+</section>
+<section id="analyzing-the-lost-players-and-defining-criteria-for-the-search" class="level4">
+<h4 class="anchored" data-anchor-id="analyzing-the-lost-players-and-defining-criteria-for-the-search"><strong>Analyzing the lost players and defining criteria for the search</strong></h4>
+<p>Is there anything we can learn from the lost players?<br>
+First of all let’s define the OA’s budget to sign 3 new players. As per the chart below, the total in salaries for them in 2001 amounted to $11.5M. Let’s say there’s also available an additional amount to spend of about $3.5M, which would result in a <strong>total budget</strong> of <strong>$15M</strong> to sign 3 new players.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># analyze lost players</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">#get dataframe with 3 lost players</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>lost.players <span class="ot">&lt;-</span> combo <span class="sc">%&gt;%</span> <span class="fu">subset</span>(playerID <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">'giambja01'</span>,<span class="st">'damonjo01'</span>,<span class="st">'saenzol01'</span>))</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co">#visualize trend of salaries through years</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>trendsal.lostplayers <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(<span class="fu">filter</span>(lost.players,yearID<span class="sc">&lt;</span><span class="dv">2003</span>),<span class="fu">aes</span>(yearID,<span class="fu">round</span>(salary<span class="sc">/</span><span class="fl">1e6</span>,<span class="dv">2</span>))) <span class="sc">+</span> <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">group=</span>playerID,<span class="at">color=</span>playerID)) <span class="sc">+</span> <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">color=</span>playerID)) <span class="sc">+</span> <span class="fu">theme</span>(<span class="at">plot.margin=</span><span class="dv">0</span>) <span class="sc">+</span> <span class="fu">theme_calc</span>() <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">y=</span><span class="st">'salary ($M)'</span>,<span class="at">x=</span><span class="st">'season'</span>,<span class="at">caption=</span><span class="st">'salary trend for the lost players up until 2002, after they moved to other teams in 2001'</span>)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(trendsal.lostplayers)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="moneyball_files/figure-html/lost-players-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Other than the budget constrain, what are other variables that we should be focusing on among the entire dataset? Let’s explore the relationships and correlations between variables:</p>
+<!-- -->
+
 </section>
 </section>
 
@@ -191,6 +292,57 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     // clear code selection
     e.clearSelection();
   });
+  const viewSource = window.document.getElementById('quarto-view-source') ||
+                     window.document.getElementById('quarto-code-tools-source');
+  if (viewSource) {
+    const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+    viewSource.addEventListener("click", function(e) {
+      if (sourceUrl) {
+        // rstudio viewer pane
+        if (/\bcapabilities=\b/.test(window.location)) {
+          window.open(sourceUrl);
+        } else {
+          window.location.href = sourceUrl;
+        }
+      } else {
+        const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+        modal.show();
+      }
+      return false;
+    });
+  }
+  function toggleCodeHandler(show) {
+    return function(e) {
+      const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
+      for (let i=0; i<detailsSrc.length; i++) {
+        const details = detailsSrc[i].parentElement;
+        if (show) {
+          details.open = true;
+        } else {
+          details.removeAttribute("open");
+        }
+      }
+      const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
+      const fromCls = show ? "hidden" : "unhidden";
+      const toCls = show ? "unhidden" : "hidden";
+      for (let i=0; i<cellCodeDivs.length; i++) {
+        const codeDiv = cellCodeDivs[i];
+        if (codeDiv.classList.contains(fromCls)) {
+          codeDiv.classList.remove(fromCls);
+          codeDiv.classList.add(toCls);
+        } 
+      }
+      return false;
+    }
+  }
+  const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+  if (hideAllCode) {
+    hideAllCode.addEventListener("click", toggleCodeHandler(false));
+  }
+  const showAllCode = window.document.getElementById("quarto-show-all-code");
+  if (showAllCode) {
+    showAllCode.addEventListener("click", toggleCodeHandler(true));
+  }
   function tippyHover(el, contentFn) {
     const config = {
       allowHTML: true,
@@ -344,7 +496,138 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
   }
 });
-</script>
+</script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
+<div class="sourceCode" id="cb4" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "MoneyBall"</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="an">subtitle:</span><span class="co"> "Helping Billy Beane (or Brad Pitt) to make it to the 2002 playoffs with the Oakland A's"</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="an">author:</span><span class="co"> "David Desquens"</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="an">format:</span><span class="co"> </span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co">  html:</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co">    code-fold: true</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co">    code-tools: true</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co">    df-print: paged</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="an">editor:</span><span class="co"> visual</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="al">![](moneyball_title.jpg)</span>{fig-align="left"}</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="fu">## Context &amp; Background</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>*Source: [Wikipedia](https://en.wikipedia.org/wiki/Moneyball)*</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="fu">#### **Rules of Baseball**</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>You don't need to know much about Baseball to understand the analysis. If you're totally unfamiliar with Baseball, check out this <span class="co">[</span><span class="ot">useful explanatory video!</span><span class="co">](https://www.youtube.com/watch?v=0bKkGeROiPA)</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="fu">#### **The 2002 Oakland A's**</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>The Oakland Athletics' 2002 season was the team's 35th in Oakland, California. It was also the 102nd season in franchise history. The Athletics finished first in the American League West with a record of 103-59.</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>The Athletics' 2002 campaign ranks among the most famous in franchise history. Following the 2001 season, Oakland saw the departure of three key players (the lost boys). Billy Beane, the team's general manager, responded with a series of under-the-radar free agent signings. The new-look Athletics, despite a comparative lack of star power, surprised the baseball world by besting the 2001 team's regular season record. The team is most famous, however, for winning 20 consecutive games between August 13 and September 4, 2002. The Athletics' season was the subject of Michael Lewis' 2003 book Moneyball: The Art of Winning an Unfair Game (as Lewis was given the opportunity to follow the team around throughout that season).</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>This project is based off the book written by Michael Lewis (later turned into a movie - see <span class="co">[</span><span class="ot">the magic moment</span><span class="co">](https://youtu.be/yGf6LNWY9AI?si=zsLayKwV5YBw-Jqm)</span>).</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a><span class="fu">#### **Moneyball Book**</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>The central premise of book *Moneyball* is that the collective wisdom of baseball insiders (including players, managers, coaches, scouts, and the front office) over the past century is subjective and often flawed. Statistics such as stolen bases, runs batted in, and batting average, typically used to gauge players, are relics of a 19th-century view of the game and the statistics available at that time. The book argues that the Oakland A's' front office took advantage of more analytical gauges of player performance to field a team that could better compete against richer competitors in Major League Baseball (MLB).</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>Rigorous statistical analysis had demonstrated that on-base percentage and slugging percentage are better indicators of offensive success, and the A's became convinced that these qualities were cheaper to obtain on the open market than more historically valued qualities such as speed and contact. These observations often flew in the face of conventional baseball wisdom and the beliefs of many baseball scouts and executives.</span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>By re-evaluating the strategies that produce wins on the field, the 2002 Athletics, with approximately US 44 million dollars in salary, were competitive with larger market teams such as the New York Yankees, who spent over US\$125 million in payroll that same season.</span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a><span class="al">![](salary.png)</span>{fig-align="center"}</span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>Because of the team's smaller revenues, Oakland is forced to find players undervalued by the market, and their system for finding value in undervalued players has proven itself thus far. This approach brought the A's to the playoffs in 2002 and 2003.</span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>In this project we'll work with some data and with the goal of trying to find replacement players for the ones lost at the start of the off-season - During the 2001--02 offseason, the team lost three key free agents to larger market teams: 2000 AL MVP Jason Giambi to the New York Yankees, outfielder Johnny Damon to the Boston Red Sox, and closer Jason Isringhausen to the St. Louis Cardinals.</span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a><span class="fu">## Let's get started!</span></span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a>The main goal of this project is to help the Oakland A's recruit under-valued players!</span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a><span class="al">![](Moneyball.jpg)</span>{fig-align="center"}</span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a><span class="fu">#### **Data prep**</span></span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a>We'll be using data from <span class="co">[</span><span class="ot">Sean Lahaman's Website</span><span class="co">](http://www.seanlahman.com)</span> a very useful source for baseball statistics. The documentation for the csv files that we will be using is located in the readme2013.txt file in the <span class="co">[</span><span class="ot">github repo</span><span class="co">](https://github.com/ddesquens/ddesquens.github.io/tree/main/R%20projects/Moneyball)</span>. You may need to reference this to understand what acronyms stand for.</span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: load-packages-data-inputs</span></span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a><span class="co">#| include: false</span></span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################</span></span>
+<span id="cb4-63"><a href="#cb4-63" aria-hidden="true" tabindex="-1"></a><span class="co"># libraries &amp; inputs</span></span>
+<span id="cb4-64"><a href="#cb4-64" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################</span></span>
+<span id="cb4-65"><a href="#cb4-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-66"><a href="#cb4-66" aria-hidden="true" tabindex="-1"></a><span class="co">#libraries</span></span>
+<span id="cb4-67"><a href="#cb4-67" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb4-68"><a href="#cb4-68" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(plotly)</span>
+<span id="cb4-69"><a href="#cb4-69" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggthemes)</span>
+<span id="cb4-70"><a href="#cb4-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-71"><a href="#cb4-71" aria-hidden="true" tabindex="-1"></a><span class="co">#data inputs</span></span>
+<span id="cb4-72"><a href="#cb4-72" aria-hidden="true" tabindex="-1"></a>batting <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">'Batting.csv'</span>)</span>
+<span id="cb4-73"><a href="#cb4-73" aria-hidden="true" tabindex="-1"></a>sal <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">'Salaries.csv'</span>)</span>
+<span id="cb4-74"><a href="#cb4-74" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb4-75"><a href="#cb4-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-76"><a href="#cb4-76" aria-hidden="true" tabindex="-1"></a>We know from literature that on-base percentage (<span class="in">`OBP`</span>) and slugging percentage (<span class="in">`SLG`</span>) are better indicators of offensive success, so we're calculating and adding them to our data, which is made of two data extracts that contain stats and salaries; we are merging them by <span class="in">`playerID`</span> and <span class="in">`yearID`</span>, illustrating a sample of the results as follows:</span>
+<span id="cb4-77"><a href="#cb4-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-80"><a href="#cb4-80" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb4-81"><a href="#cb4-81" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: data-prep</span></span>
+<span id="cb4-82"><a href="#cb4-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-83"><a href="#cb4-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-84"><a href="#cb4-84" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################</span></span>
+<span id="cb4-85"><a href="#cb4-85" aria-hidden="true" tabindex="-1"></a><span class="co"># data prep</span></span>
+<span id="cb4-86"><a href="#cb4-86" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################</span></span>
+<span id="cb4-87"><a href="#cb4-87" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-88"><a href="#cb4-88" aria-hidden="true" tabindex="-1"></a><span class="co">#add features to data</span></span>
+<span id="cb4-89"><a href="#cb4-89" aria-hidden="true" tabindex="-1"></a>batting<span class="sc">$</span>BA <span class="ot">&lt;-</span> batting<span class="sc">$</span>H <span class="sc">/</span> batting<span class="sc">$</span>AB</span>
+<span id="cb4-90"><a href="#cb4-90" aria-hidden="true" tabindex="-1"></a>batting <span class="ot">&lt;-</span> batting <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">OBP =</span> (H<span class="sc">+</span>BB<span class="sc">+</span>HBP)<span class="sc">/</span>(AB<span class="sc">+</span>BB<span class="sc">+</span>HBP<span class="sc">+</span>SF))</span>
+<span id="cb4-91"><a href="#cb4-91" aria-hidden="true" tabindex="-1"></a>batting <span class="ot">&lt;-</span> batting <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">X1B =</span> H<span class="sc">-</span>X2B<span class="sc">-</span>X3B<span class="sc">-</span>HR)</span>
+<span id="cb4-92"><a href="#cb4-92" aria-hidden="true" tabindex="-1"></a>batting <span class="ot">&lt;-</span> batting <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">SLG =</span> (X1B <span class="sc">+</span> <span class="dv">2</span><span class="sc">*</span>X2B <span class="sc">+</span> <span class="dv">3</span><span class="sc">*</span>X3B <span class="sc">+</span> <span class="dv">4</span><span class="sc">*</span>HR)<span class="sc">/</span>AB)</span>
+<span id="cb4-93"><a href="#cb4-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-94"><a href="#cb4-94" aria-hidden="true" tabindex="-1"></a><span class="co">#remove data from batting (salaries data set only have data from 1985 onwards)</span></span>
+<span id="cb4-95"><a href="#cb4-95" aria-hidden="true" tabindex="-1"></a>batting <span class="ot">&lt;-</span> batting <span class="sc">%&gt;%</span> <span class="fu">filter</span>(yearID<span class="sc">&gt;=</span><span class="dv">1985</span>)</span>
+<span id="cb4-96"><a href="#cb4-96" aria-hidden="true" tabindex="-1"></a><span class="co">#*to check that we have don't it correctly: arrange(distinct((batting %&gt;% filter(yearID&gt;=1985))['yearID']),yearID)</span></span>
+<span id="cb4-97"><a href="#cb4-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-98"><a href="#cb4-98" aria-hidden="true" tabindex="-1"></a><span class="co">#merge both datasets batting and sal to combine player stats with salaries</span></span>
+<span id="cb4-99"><a href="#cb4-99" aria-hidden="true" tabindex="-1"></a>combo <span class="ot">&lt;-</span> <span class="fu">merge</span>(batting,sal,<span class="at">by=</span><span class="fu">c</span>(<span class="st">'playerID'</span>,<span class="st">'yearID'</span>))</span>
+<span id="cb4-100"><a href="#cb4-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-101"><a href="#cb4-101" aria-hidden="true" tabindex="-1"></a><span class="co">#show results</span></span>
+<span id="cb4-102"><a href="#cb4-102" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">head</span>(<span class="fu">arrange</span>(<span class="fu">select</span>(<span class="fu">filter</span>(combo,yearID<span class="sc">==</span><span class="dv">2001</span>),playerID,teamID.x,AB,OBP,SLG,salary),<span class="fu">desc</span>(OBP<span class="sc">*</span>AB))))</span>
+<span id="cb4-103"><a href="#cb4-103" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb4-104"><a href="#cb4-104" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-107"><a href="#cb4-107" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb4-108"><a href="#cb4-108" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: adhoc-calc</span></span>
+<span id="cb4-109"><a href="#cb4-109" aria-hidden="true" tabindex="-1"></a><span class="co">#| include: false</span></span>
+<span id="cb4-110"><a href="#cb4-110" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-111"><a href="#cb4-111" aria-hidden="true" tabindex="-1"></a>total.salaries <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">sum</span>((combo <span class="sc">%&gt;%</span> <span class="fu">subset</span>(playerID <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">'giambja01'</span>,<span class="st">'damonjo01'</span>,<span class="st">'saenzol01'</span>) <span class="sc">&amp;</span> yearID<span class="sc">==</span><span class="dv">2001</span>))<span class="sc">$</span>salary)<span class="sc">/</span><span class="fl">1e6</span>,<span class="dv">1</span>)</span>
+<span id="cb4-112"><a href="#cb4-112" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb4-113"><a href="#cb4-113" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-114"><a href="#cb4-114" aria-hidden="true" tabindex="-1"></a><span class="fu">#### **Analyzing the lost players and defining criteria for the search**</span></span>
+<span id="cb4-115"><a href="#cb4-115" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-116"><a href="#cb4-116" aria-hidden="true" tabindex="-1"></a>Is there anything we can learn from the lost players?\</span>
+<span id="cb4-117"><a href="#cb4-117" aria-hidden="true" tabindex="-1"></a>First of all let's define the OA's budget to sign 3 new players. As per the chart below, the total in salaries for them in 2001 amounted to \$<span class="in">`r total.salaries`</span>M. Let's say there's also available an additional amount to spend of about \$3.5M, which would result in a **total budget** of **\$15M** to sign 3 new players.</span>
+<span id="cb4-118"><a href="#cb4-118" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-121"><a href="#cb4-121" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb4-122"><a href="#cb4-122" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: lost-players</span></span>
+<span id="cb4-123"><a href="#cb4-123" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-124"><a href="#cb4-124" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-125"><a href="#cb4-125" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################</span></span>
+<span id="cb4-126"><a href="#cb4-126" aria-hidden="true" tabindex="-1"></a><span class="co"># analyze lost players</span></span>
+<span id="cb4-127"><a href="#cb4-127" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################</span></span>
+<span id="cb4-128"><a href="#cb4-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-129"><a href="#cb4-129" aria-hidden="true" tabindex="-1"></a><span class="co">#get dataframe with 3 lost players</span></span>
+<span id="cb4-130"><a href="#cb4-130" aria-hidden="true" tabindex="-1"></a>lost.players <span class="ot">&lt;-</span> combo <span class="sc">%&gt;%</span> <span class="fu">subset</span>(playerID <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">'giambja01'</span>,<span class="st">'damonjo01'</span>,<span class="st">'saenzol01'</span>))</span>
+<span id="cb4-131"><a href="#cb4-131" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-132"><a href="#cb4-132" aria-hidden="true" tabindex="-1"></a><span class="co">#visualize trend of salaries through years</span></span>
+<span id="cb4-133"><a href="#cb4-133" aria-hidden="true" tabindex="-1"></a>trendsal.lostplayers <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(<span class="fu">filter</span>(lost.players,yearID<span class="sc">&lt;</span><span class="dv">2003</span>),<span class="fu">aes</span>(yearID,<span class="fu">round</span>(salary<span class="sc">/</span><span class="fl">1e6</span>,<span class="dv">2</span>))) <span class="sc">+</span> <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">group=</span>playerID,<span class="at">color=</span>playerID)) <span class="sc">+</span> <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">color=</span>playerID)) <span class="sc">+</span> <span class="fu">theme</span>(<span class="at">plot.margin=</span><span class="dv">0</span>) <span class="sc">+</span> <span class="fu">theme_calc</span>() <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">y=</span><span class="st">'salary ($M)'</span>,<span class="at">x=</span><span class="st">'season'</span>,<span class="at">caption=</span><span class="st">'salary trend for the lost players up until 2002, after they moved to other teams in 2001'</span>)</span>
+<span id="cb4-134"><a href="#cb4-134" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(trendsal.lostplayers)</span>
+<span id="cb4-135"><a href="#cb4-135" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb4-136"><a href="#cb4-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-137"><a href="#cb4-137" aria-hidden="true" tabindex="-1"></a>Other than the budget constrain, what are other variables that we should be focusing on among the entire dataset? Let's explore the relationships and correlations between variables:</span>
+</code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div></div></div></div></div>
 </div> <!-- /content -->
 
 

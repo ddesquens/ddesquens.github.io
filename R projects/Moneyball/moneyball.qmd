@@ -2,7 +2,11 @@
 title: "MoneyBall"
 subtitle: "Helping Billy Beane (or Brad Pitt) to make it to the 2002 playoffs with the Oakland A's"
 author: "David Desquens"
-format: html
+format: 
+  html:
+    code-fold: true
+    code-tools: true
+    df-print: paged
 editor: visual
 ---
 
@@ -11,6 +15,10 @@ editor: visual
 ## Context & Background
 
 *Source: [Wikipedia](https://en.wikipedia.org/wiki/Moneyball)*
+
+#### **Rules of Baseball**
+
+You don't need to know much about Baseball to understand the analysis. If you're totally unfamiliar with Baseball, check out this [useful explanatory video!](https://www.youtube.com/watch?v=0bKkGeROiPA)
 
 #### **The 2002 Oakland A's**
 
@@ -40,6 +48,82 @@ The main goal of this project is to help the Oakland A's recruit under-valued pl
 
 ![](Moneyball.jpg){fig-align="center"}
 
-#### **Data**
+#### **Data prep**
 
 We'll be using data from [Sean Lahaman's Website](http://www.seanlahman.com) a very useful source for baseball statistics. The documentation for the csv files that we will be using is located in the readme2013.txt file in the [github repo](https://github.com/ddesquens/ddesquens.github.io/tree/main/R%20projects/Moneyball). You may need to reference this to understand what acronyms stand for.
+
+```{r}
+#| label: load-packages-data-inputs
+#| include: false
+
+
+#######################################
+# libraries & inputs
+#######################################
+
+#libraries
+library(tidyverse)
+library(plotly)
+library(ggthemes)
+
+#data inputs
+batting <- read.csv('Batting.csv')
+sal <- read.csv('Salaries.csv')
+```
+
+We know from literature that on-base percentage (`OBP`) and slugging percentage (`SLG`) are better indicators of offensive success, so we're calculating and adding them to our data, which is made of two data extracts that contain stats and salaries; we are merging them by `playerID` and `yearID`, illustrating a sample of the results as follows:
+
+```{r}
+#| label: data-prep
+
+
+#######################################
+# data prep
+#######################################
+
+#add features to data
+batting$BA <- batting$H / batting$AB
+batting <- batting %>% mutate(OBP = (H+BB+HBP)/(AB+BB+HBP+SF))
+batting <- batting %>% mutate(X1B = H-X2B-X3B-HR)
+batting <- batting %>% mutate(SLG = (X1B + 2*X2B + 3*X3B + 4*HR)/AB)
+
+#remove data from batting (salaries data set only have data from 1985 onwards)
+batting <- batting %>% filter(yearID>=1985)
+#*to check that we have don't it correctly: arrange(distinct((batting %>% filter(yearID>=1985))['yearID']),yearID)
+
+#merge both datasets batting and sal to combine player stats with salaries
+combo <- merge(batting,sal,by=c('playerID','yearID'))
+
+#show results
+print(head(arrange(select(filter(combo,yearID==2001),playerID,teamID.x,AB,OBP,SLG,salary),desc(OBP*AB))))
+```
+
+```{r}
+#| label: adhoc-calc
+#| include: false
+
+total.salaries <- round(sum((combo %>% subset(playerID %in% c('giambja01','damonjo01','saenzol01') & yearID==2001))$salary)/1e6,1)
+```
+
+#### **Analyzing the lost players and defining criteria for the search**
+
+Is there anything we can learn from the lost players?\
+First of all let's define the OA's budget to sign 3 new players. As per the chart below, the total in salaries for them in 2001 amounted to \$`r total.salaries`M. Let's say there's also available an additional amount to spend of about \$3.5M, which would result in a **total budget** of **\$15M** to sign 3 new players.
+
+```{r}
+#| label: lost-players
+
+
+#######################################
+# analyze lost players
+#######################################
+
+#get dataframe with 3 lost players
+lost.players <- combo %>% subset(playerID %in% c('giambja01','damonjo01','saenzol01'))
+
+#visualize trend of salaries through years
+trendsal.lostplayers <- ggplot(filter(lost.players,yearID<2003),aes(yearID,round(salary/1e6,2))) + geom_line(aes(group=playerID,color=playerID)) + geom_point(aes(color=playerID)) + theme(plot.margin=0) + theme_calc() + labs(y='salary ($M)',x='season',caption='salary trend for the lost players up until 2002, after they moved to other teams in 2001')
+print(trendsal.lostplayers)
+```
+
+Other than the budget constrain, what are other variables that we should be focusing on among the entire dataset? Let's explore the relationships and correlations between variables:

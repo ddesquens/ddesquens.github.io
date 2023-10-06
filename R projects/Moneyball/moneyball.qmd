@@ -42,4 +42,4 @@ The main goal of this project is to help the Oakland A's recruit under-valued pl
 
 #### **Data**
 
-We'll be using data from [Sean Lahaman's Website](http://www.seanlahman.com) a very useful source for baseball statistics. The documentation for the csv files that we will be using is located in the readme2013.txt file in the [github repo](https://github.com/ddesquens/ddesquens.github.io). You may need to reference this to understand what acronyms stand for.
+We'll be using data from [Sean Lahaman's Website](http://www.seanlahman.com) a very useful source for baseball statistics. The documentation for the csv files that we will be using is located in the readme2013.txt file in the [github repo](https://github.com/ddesquens/ddesquens.github.io/tree/main/R%20projects/Moneyball). You may need to reference this to understand what acronyms stand for.

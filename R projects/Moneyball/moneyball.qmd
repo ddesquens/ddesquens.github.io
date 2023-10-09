@@ -132,7 +132,7 @@ Other than the budget constraint, what are other variables that we should be foc
 
 ```{r}
 #| label: lost-player-stats
-#| include: false
+#| echo: false
 
 #concentrating on the pre-season 2002 data (that is from season 2001)
 lost.players.2001 <- lost.players %>% filter(yearID==2001) %>% select(playerID,H,X2B,X3B,HR,OBP,SLG,BA,AB,salary)

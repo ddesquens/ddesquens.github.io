@@ -110,7 +110,7 @@ total.salaries <- round(sum((combo %>% subset(playerID %in% c('giambja01','damon
 #### **Analyzing the lost players and defining criteria for the search**
 
 Is there anything we can learn from the lost players?\
-First of all let's define the OA's budget to sign 3 new players. As per the chart below, the total in salaries for them in 2001 amounted to \$`r total.salaries`M. We have a **total budget** of **\$15M** to sign 3 new players.
+First of all let's define the OA's budget to sign 3 new players. As per the chart below, the total in salaries for them in 2001 amounted to \$`r total.salaries`M, so rounding we have a **total budget** of **\$15M** to sign 3 new players.
 
 ```{r}
 #| label: lost-players
@@ -124,8 +124,8 @@ First of all let's define the OA's budget to sign 3 new players. As per the char
 lost.players <- combo %>% subset(playerID %in% c('giambja01','damonjo01','isrinja01'))
 
 #visualize trend of salaries through years
-trendsal.lostplayers <- ggplot(filter(lost.players,yearID<2003),aes(yearID,round(salary/1e6,2))) + geom_line(aes(group=playerID,color=playerID)) + geom_point(aes(color=playerID)) + theme_calc() + labs(y='salary ($M)',x='season',caption='salary trend for the lost players up until 2002, after they moved to other teams in 2001')
-trendsal.lostplayers
+trendsal.lostplayers <- ggplot(filter(lost.players,yearID<2003),aes(yearID,round(salary/1e6,2),text=round(salary/1e6,2))) + geom_line(aes(group=playerID,color=playerID)) + geom_point(aes(color=playerID)) + theme_calc() + labs(y='salary ($M)',x='season',caption='salary trend for the lost players up until 2002, after they moved to other teams in 2001')
+ggplotly(trendsal.lostplayers,tooltip="text")
 ```
 
 Other than the budget constraint, what are other variables that we should be focusing on among the entire dataset?
@@ -231,24 +231,23 @@ df.eligible.combinations <- arrange(rbindlist(eligible.combinations),salary.tota
 print(df.eligible.combinations)
 ```
 
-Organizing the winning combinations into a scatterplot divided in four quadrants, we can gather more insight as to which are the best combinations.
+Organizing the winning combinations into a scatterplot divided in four quadrants, we can gather more insight as to which are the best combinations taking into account that the size of dots represent the `salary.total`.
 ```{r}
 #| label: winning-plot
 
-#calculate quadrants
+#
 x_mid <- mean(c(max(df.eligible.combinations$AB.combined, na.rm = TRUE), 
                 min(df.eligible.combinations$AB.combined, na.rm = TRUE)))
 
 y_mid <- mean(c(max(df.eligible.combinations$OBP.mean, na.rm = TRUE), 
                 min(df.eligible.combinations$OBP.mean, na.rm = TRUE)))
 
-plot.combinations <- df.eligible.combinations %>% mutate(quadrant = case_when(
-  AB.combined > x_mid & OBP.mean > y_mid ~ "Q1",
-  AB.combined <= x_mid & OBP.mean > y_mid  ~ "Q2",
-  AB.combined <= x_mid & OBP.mean <= y_mid ~ "Q3",
-  TRUE ~ "Q4"))
+plot.combinations <- df.eligible.combinations %>% mutate(quadrant = case_when(AB.combined > x_mid & OBP.mean > y_mid   ~ "Q1",
+                              AB.combined <= x_mid & OBP.mean > y_mid  ~ "Q2",
+                              AB.combined <= x_mid & OBP.mean <= y_mid ~ "Q3",
+                              TRUE                                         ~ "Q4"))
 
 #plot winning combinations
-scatterplot.combinations <- ggplot(plot.combinations, aes(AB.combined, OBP.mean,color=quadrant,size=salary.total)) + geom_vline(xintercept = x_mid) + geom_hline(yintercept = y_mid) + geom_point(alpha=0.45) + theme_calc()
-scatterplot.combinations
+scatterplot.combinations <- ggplot(plot.combinations, aes(AB.combined, OBP.mean,color=quadrant,size=salary.total,text=paste(candidate.players,round(salary.total/1e6,2)))) + geom_vline(xintercept = x_mid) + geom_hline(yintercept = y_mid) + geom_point(alpha=0.45) + theme_calc() + theme(legend.position="none")
+ggplotly(scatterplot.combinations,tooltip="text")
 ```

@@ -65,6 +65,7 @@ We'll be using data from [Sean Lahaman's Website](http://www.seanlahman.com) a v
 library(tidyverse)
 library(plotly)
 library(ggthemes)
+library(data.table)
 
 #data inputs
 batting <- read.csv('Batting.csv')
@@ -89,26 +90,27 @@ batting <- batting %>% mutate(SLG = (X1B + 2*X2B + 3*X3B + 4*HR)/AB)
 
 #remove data from batting (salaries data set only have data from 1985 onwards)
 batting <- batting %>% filter(yearID>=1985)
-#*to check that we have don't it correctly: arrange(distinct((batting %>% filter(yearID>=1985))['yearID']),yearID)
 
 #merge both datasets batting and sal to combine player stats with salaries
-combo <- merge(batting,sal,by=c('playerID','yearID'))
+excluded.fields <- c('teamID','lgID')
+sal.excluding.fields <- select(sal,-any_of(excluded.fields))
+combo <- merge(batting,sal.excluding.fields,by=c('playerID','yearID'))
 
 #show results
-print(head(arrange(select(filter(combo,yearID==2001),playerID,teamID.x,AB,OBP,SLG,salary),desc(OBP*AB))))
+print(head(arrange(select(filter(combo,yearID==2001),playerID,teamID,AB,OBP,SLG,salary),desc(OBP*AB))))
 ```
 
 ```{r}
 #| label: adhoc-calc
 #| include: false
 
-total.salaries <- round(sum((combo %>% subset(playerID %in% c('giambja01','damonjo01','saenzol01') & yearID==2001))$salary)/1e6,1)
+total.salaries <- round(sum((combo %>% subset(playerID %in% c('giambja01','damonjo01','isrinja01') & yearID==2001))$salary)/1e6,1)
 ```
 
 #### **Analyzing the lost players and defining criteria for the search**
 
 Is there anything we can learn from the lost players?\
-First of all let's define the OA's budget to sign 3 new players. As per the chart below, the total in salaries for them in 2001 amounted to \$`r total.salaries`M. Let's say there's also available an additional amount to spend of about \$3.5M, which would result in a **total budget** of **\$15M** to sign 3 new players.
+First of all let's define the OA's budget to sign 3 new players. As per the chart below, the total in salaries for them in 2001 amounted to \$`r total.salaries`M. We have a **total budget** of **\$15M** to sign 3 new players.
 
 ```{r}
 #| label: lost-players
@@ -119,11 +121,134 @@ First of all let's define the OA's budget to sign 3 new players. As per the char
 #######################################
 
 #get dataframe with 3 lost players
-lost.players <- combo %>% subset(playerID %in% c('giambja01','damonjo01','saenzol01'))
+lost.players <- combo %>% subset(playerID %in% c('giambja01','damonjo01','isrinja01'))
 
 #visualize trend of salaries through years
-trendsal.lostplayers <- ggplot(filter(lost.players,yearID<2003),aes(yearID,round(salary/1e6,2))) + geom_line(aes(group=playerID,color=playerID)) + geom_point(aes(color=playerID)) + theme(plot.margin=0) + theme_calc() + labs(y='salary ($M)',x='season',caption='salary trend for the lost players up until 2002, after they moved to other teams in 2001')
+trendsal.lostplayers <- ggplot(filter(lost.players,yearID<2003),aes(yearID,round(salary/1e6,2))) + geom_line(aes(group=playerID,color=playerID)) + geom_point(aes(color=playerID)) + theme_calc() + labs(y='salary ($M)',x='season',caption='salary trend for the lost players up until 2002, after they moved to other teams in 2001')
 trendsal.lostplayers
 ```
 
-Other than the budget constrain, what are other variables that we should be focusing on among the entire dataset? Let's explore the relationships and correlations between variables:
+Other than the budget constraint, what are other variables that we should be focusing on among the entire dataset?
+
+```{r}
+#| label: lost-player-stats
+#| include: false
+
+#concentrating on the pre-season 2002 data (that is from season 2001)
+lost.players.2001 <- lost.players %>% filter(yearID==2001) %>% select(playerID,H,X2B,X3B,HR,OBP,SLG,BA,AB,salary)
+print(lost.players.2001)
+```
+
+Now we have all the information we need, let's put together the following 3 constraints:
+
+-   The total combined salary of the three players can not exceed 15 million dollars.
+
+-   Their combined number of At Bats (AB) needs to be equal to or greater than the lost players.
+
+-   Their mean OBP had to be equal to or greater than the mean OBP of the lost players.
+
+```{r}
+#| label: calc-constraints
+#| echo: false
+
+#calculating constraints
+salary.cap <- ceiling(total.salaries)
+AB.min <- sum(lost.players.2001$AB)
+OBP.mean <- mean(lost.players.2001$OBP)
+cat("Salary cap =", gsub(" ", "", paste("$", salary.cap, "M")),"\nAB combined =", AB.min,"\nOBP mean =", round(OBP.mean,7))
+```
+
+#### **Replacement players**
+
+```{r}
+#| label: pool-players
+#| echo: false
+
+#get a dataframe with 2001 players excluding the 3 who left and the ones in the OAK team
+external.players <- combo %>% subset(yearID==2001 & !(playerID %in% c('giambja01','damonjo01','isrinja01')) & (teamID != 'OAK') & salary < salary.cap*1e6-2*(quantile(combo$salary)[4]) & !(is.na(salary)) & !(is.na(AB)) & !(is.na(OBP)) & OBP > 0 & AB > 0)
+
+#arrange dataframe and calculate initial pool of players
+external.players <- external.players %>% arrange(desc(OBP*AB),salary) %>% select(playerID,yearID,teamID,lgID,AB,OBP,salary)
+pool.players <- nrow(external.players)
+```
+
+We have a pool of `r pool.players` players. The idea is to compute combinations of 3 players that meet the criteria defined and provide them in order of maximizing the stats `AB`, `OBP` and minimizing the `salary` paid.
+
+For the sake of a relatively quick computing we are going to cut the pool of players down by picking the top 14 sample sorted by descending product `AB x OBP` and ascending `salary`.
+
+```{r}
+#| label: pool-reduction
+
+#reduce the dataframe to top 14
+external.players <- head(external.players,14)
+print(external.players)
+```
+
+Billy Beane has to sign any of the following combinations of 3 players to made it to the playoffs in the next season 2002 (sorted from cheapest to most expensive):
+
+```{r}
+#| label: loop-computing
+
+#go through combinations of 3 players and append those which satisfy the conditions to a dataframe ordering them from best to worse options
+df <- external.players
+n <- 1
+eligible.combinations <- list()
+list.candidate.players <- vector()
+list.unique.players <- vector()
+for(p1 in df$playerID) {
+  for(p2 in df$playerID) {
+    if(p1!=p2) {
+      for(p3 in df$playerID) {
+        if(p1!=p3 & p2!=p3) {
+          #condition 1
+          salary.players <- sum(filter(df,playerID %in% c(p1,p2,p3))$salary)
+          c1 <- salary.players <= salary.cap*1e6
+          #condition 2
+          AB.players <- sum(filter(df,playerID %in% c(p1,p2,p3))$AB)
+          c2 <- AB.players >= AB.min
+          #condition 3
+          OBP.players <- mean(filter(df,playerID %in% c(p1,p2,p3))$OBP)
+          c3 <- OBP.players >= OBP.mean
+          #check all
+          if(all(c1,c2,c3)) {
+            candidate.players <- paste(sort(c(p1,p2,p3)),collapse=" | ")
+            list.unique.players <- sort(unique(append(list.unique.players, c(p1,p2,p3))))
+            #check combination of players
+            if(!(candidate.players %in% list.candidate.players)) {
+              eligible.combinations <- append(eligible.combinations, list(data.frame(candidate.players,salary.total=salary.players,AB.combined=AB.players,OBP.mean=OBP.players)))
+              list.candidate.players <- append(list.candidate.players,candidate.players)
+              n <- n + 1
+            }
+          }
+        } else {next}
+      }
+    } else {next}
+  }
+}
+
+#potential winning combinations of players to sign in
+df.eligible.combinations <- arrange(rbindlist(eligible.combinations),salary.total,desc(OBP.mean*AB.combined))
+print(df.eligible.combinations)
+```
+
+Organizing the winning combinations into a scatterplot divided in four quadrants, we can gather more insight as to which are the best combinations.
+```{r}
+#| label: winning-plot
+
+#calculate quadrants
+x_mid <- mean(c(max(df.eligible.combinations$AB.combined, na.rm = TRUE), 
+                min(df.eligible.combinations$AB.combined, na.rm = TRUE)))
+
+y_mid <- mean(c(max(df.eligible.combinations$OBP.mean, na.rm = TRUE), 
+                min(df.eligible.combinations$OBP.mean, na.rm = TRUE)))
+
+plot.combinations <- df.eligible.combinations %>% mutate(quadrant = case_when(
+  AB.combined > x_mid & OBP.mean > y_mid ~ "Q1",
+  AB.combined <= x_mid & OBP.mean > y_mid  ~ "Q2",
+  AB.combined <= x_mid & OBP.mean <= y_mid ~ "Q3",
+  TRUE ~ "Q4"))
+
+#plot winning combinations
+scatterplot.combinations <- ggplot(plot.combinations, aes(AB.combined, OBP.mean,color=quadrant,size=salary.total)) + geom_vline(xintercept = x_mid) + geom_hline(yintercept = y_mid) + geom_point(alpha=0.45) + theme_calc()
+scatterplot.combinations
+```

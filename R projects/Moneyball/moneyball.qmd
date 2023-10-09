@@ -124,8 +124,8 @@ First of all let's define the OA's budget to sign 3 new players. As per the char
 lost.players <- combo %>% subset(playerID %in% c('giambja01','damonjo01','isrinja01'))
 
 #visualize trend of salaries through years
-trendsal.lostplayers <- ggplot(filter(lost.players,yearID<2003),aes(yearID,round(salary/1e6,2),text=round(salary/1e6,2))) + geom_line(aes(group=playerID,color=playerID)) + geom_point(aes(color=playerID)) + theme_calc() + labs(y='salary ($M)',x='season',caption='salary trend for the lost players up until 2002, after they moved to other teams in 2001')
-ggplotly(trendsal.lostplayers,tooltip="text")
+trendsal.lostplayers <- ggplot(filter(lost.players,yearID<2003),aes(yearID,round(salary/1e6,2))) + geom_line(aes(group=playerID,color=playerID)) + geom_point(aes(color=playerID)) + theme_calc() + labs(y='salary ($M)',x='season',caption='salary trend for the lost players up until 2002, after they moved to other teams in 2001')
+trendsal.lostplayers
 ```
 
 Other than the budget constraint, what are other variables that we should be focusing on among the entire dataset?
@@ -160,9 +160,10 @@ cat("Salary cap =", gsub(" ", "", paste("$", salary.cap, "M")),"\nAB combined ="
 
 #### **Replacement players**
 
+As a result of cutting down our data to 2001, excluding OA's players and those who have a `salary >= salary.cap - 2 x 3rd quartile of salary` (having signed one player we want to have enough money to sign the other two) and performing some cleaning operations we have our starting list of potential players.
+
 ```{r}
 #| label: pool-players
-#| echo: false
 
 #get a dataframe with 2001 players excluding the 3 who left and the ones in the OAK team
 external.players <- combo %>% subset(yearID==2001 & !(playerID %in% c('giambja01','damonjo01','isrinja01')) & (teamID != 'OAK') & salary < salary.cap*1e6-2*(quantile(combo$salary)[4]) & !(is.na(salary)) & !(is.na(AB)) & !(is.na(OBP)) & OBP > 0 & AB > 0)
@@ -172,9 +173,9 @@ external.players <- external.players %>% arrange(desc(OBP*AB),salary) %>% select
 pool.players <- nrow(external.players)
 ```
 
-We have a pool of `r pool.players` players. The idea is to compute combinations of 3 players that meet the criteria defined and provide them in order of maximizing the stats `AB`, `OBP` and minimizing the `salary` paid.
+It results in a pool of `r pool.players` players. The idea is to compute combinations of 3 players that meet all the criteria defined and provide them in order of maximizing the stats `AB`, `OBP` and minimizing the `salary` paid.
 
-For the sake of a relatively quick computing we are going to cut the pool of players down by picking the top 14 sample sorted by descending product `AB x OBP` and ascending `salary`.
+For the sake of a quick computing we are going to cut the pool of players down by picking the top 14 sample sorted by descending product `AB x OBP` and ascending `salary`.
 
 ```{r}
 #| label: pool-reduction
@@ -231,7 +232,8 @@ df.eligible.combinations <- arrange(rbindlist(eligible.combinations),salary.tota
 print(df.eligible.combinations)
 ```
 
-Organizing the winning combinations into a scatterplot divided in four quadrants, we can gather more insight as to which are the best combinations taking into account that the size of dots represent the `salary.total`.
+Organizing the winning combinations into a scatterplot divided in four quadrants, we can gather more insight as to which are the best combinations taking into account that the size of dots represents the `salary.total`, so we might decide that a combination that is slightly inferior in terms of stats (`AB.combined` & `OBP.mean`) is much more worth it because it would cost much less, sparing part of the budget to sign in additional players that would strengthen the team in a different way.
+
 ```{r}
 #| label: winning-plot
 
@@ -248,6 +250,6 @@ plot.combinations <- df.eligible.combinations %>% mutate(quadrant = case_when(AB
                               TRUE                                         ~ "Q4"))
 
 #plot winning combinations
-scatterplot.combinations <- ggplot(plot.combinations, aes(AB.combined, OBP.mean,color=quadrant,size=salary.total,text=paste(candidate.players,round(salary.total/1e6,2)))) + geom_vline(xintercept = x_mid) + geom_hline(yintercept = y_mid) + geom_point(alpha=0.45) + theme_calc() + theme(legend.position="none")
-ggplotly(scatterplot.combinations,tooltip="text")
+scatterplot.combinations <- ggplot(plot.combinations, aes(AB.combined, OBP.mean,color=quadrant,size=salary.total)) + geom_vline(xintercept = x_mid) + geom_hline(yintercept = y_mid) + geom_point(alpha=0.45) + theme_calc()
+scatterplot.combinations
 ```

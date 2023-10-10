@@ -1,0 +1,104 @@
+---
+title: "Market Values in the Big5 European football leagues"
+subtitle: "An Exploratory Data Analysis with Transfermarkt data"
+author: "David Desquens"
+date: '`r Sys.Date()`'
+format: 
+  html:
+    code-fold: true
+    code-tools: true
+    df-print: paged
+    toc: true
+    number_sections: false
+editor: visual
+---
+
+#### Let's start exploring our dataset
+
+```{r}
+#| label: libraries-load
+#| include: false
+
+library(tidyverse)
+library(ggthemes)
+library(ggridges)
+library(viridis)
+
+ dat <- readRDS(gzcon(url("https://github.com/JaseZiv/worldfootballR_data/raw/master/data/tm_player_vals/big5_player_vals.rds")))
+str(dat)
+
+#calculate max year in the dataset
+max.season <- max(dat$season_start_year)
+```
+
+First of all, data prep, we apply some operations of data cleansing & wrangling
+
+```{r}
+#| label: data-prep
+
+#we only want a record per player per year, we will only keep the last record of the year, that is the one where the player joined a squad later, the one which has the greatest date_joined, in case of resulting in multiple records, then the biggest contract_expiry will take precedence
+dat.prep <- dat %>% group_by(player_name,season_start_year) %>% mutate(last.record.season = row_number()) %>% arrange(desc(date_joined),desc(contract_expiry)) %>% filter(last.record.season==1)
+
+#get rid of players without market value
+dat.prep <- dat.prep %>% filter(!is.na(player_market_value_euro))
+
+#check how many records without market value
+#summary(dat.prep$player_market_value_euro)
+
+#check how many players have more than one record per year, are they legit records?
+#check.records.players <- dat %>% count(player_name,season_start_year,sort=T) %>% filter(n > 1)
+#print(check.records.players)
+
+#let's check the first one, Adama Traoré in 2019
+#print(filter(dat,player_name=='Adama Traoré') %>% arrange(season_start_year,date_joined,contract_expiry) %>% select(season_start_year,squad,date_joined,contract_expiry,player_market_value_euro))
+```
+
+How many records do we have and since which year?
+
+```{r}
+#| label: records-year
+#| include: true
+
+#barplot of records per year
+barplot.records.year <- ggplot(dat.prep,aes(season_start_year)) + geom_bar() + theme_clean() + labs(x='season',y='# players')
+print(barplot.records.year)
+```
+
+What's the total aggregated Market Value per season in the Big5?
+
+```{r}
+#| label: value-year
+#| include: true
+
+#col plot of market value per year
+ggplot(dat.prep,aes(season_start_year,round(player_market_value_euro/1e6),1)) + geom_col(aes(fill=country)) + theme_clean() + labs(x='season',y='market value (€M)')
+```
+
+What is the market value of each position for each of the big5 in the last season `r max.season`?
+
+```{r}
+#| label: value-position-country
+
+#use faceting to split the colplots based on countries
+ggplot(dat.prep %>% filter(season_start_year==max.season),aes(player_market_value_euro/1e6,player_position,fill=country)) + geom_col() + theme_clean() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + facet_grid(. ~ country) + labs(y='position',x='market value (€M)')
+```
+
+How much could it cost Barça signing both Joãos?
+
+```{r}
+#| label: joaos
+
+#let's plot the market values of the Joaos through seasons ("João Cancelo","João Félix")
+ggplot(dat.prep %>% filter(player_name %in% c("João Cancelo","João Félix")),aes(season_start_year,player_market_value_euro/1e6)) + geom_line(aes(group=player_name,color=player_name)) + geom_point(aes(color=player_name)) + theme_calc() + labs(x='season',y='market value (€M)')
+```
+
+Are there any differences in `player_age` among the big5?
+
+```{r}
+#| label: test
+
+#let's plot the market values of the Joaos through seasons ("João Cancelo","João Félix")
+ggplot(dat.prep,aes(x=player_age,y=country, fill = after_stat(x))) + geom_density_ridges_gradient(scale=3,gradient_lwd=1.,alpha=.1) + scale_fill_gradientn(name="",colours=rev(viridis::viridis(5)),limits=c(10,45)) + theme_fivethirtyeight() + theme(legend.position = 'right', legend.direction = 'vertical') + ggtitle("Player Age distribution by Country")
+```
+
+-   France, Germany and Italy are predominated by youngsters vs. England and Spain where teams are oldish

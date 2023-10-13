@@ -15,6 +15,6 @@
 ### Index of projects
 
 - [MoneyBall](https://ddesquens.github.io/R%20projects/Moneyball/moneyball.html)
-- [Predicting survivability on the Titanic](https://ddesquens.github.io/R%20projects/Moneyball/moneyball.html)
+- [Predicting survivability on the Titanic](https://www.kaggle.com/code/anonymousds/ml-logistic-regression-project)
 
 ---
